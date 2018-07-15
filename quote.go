@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -22,6 +23,8 @@ import (
 type IEXQuote struct {
 	Q Quote `json:"quote"`
 }
+
+const bigmove = 0.02
 
 // Quote holds actual quote data. This is necessary for unmarshaling.
 type Quote struct {
@@ -40,16 +43,21 @@ func floatToString(f float64) string {
 	return strconv.FormatFloat(f, 'f', 2, 64)
 }
 
-func colorizeFloatToString(f float64) string {
+func colorizeFloatToString(f float64, bold bool) string {
 	// to convert a float number to a string
+	var c *color.Color
+	s := floatToString(f)
 	switch {
 	case f < 0:
-		return color.RedString(floatToString(f))
+		c = color.New(color.FgRed)
 	case f > 0:
-		return color.GreenString(floatToString(f))
-	default:
-		return floatToString(f)
+		c = color.New(color.FgGreen)
 	}
+
+	if bold {
+		c.Add(color.Bold)
+	}
+	return c.Sprint(s)
 }
 
 func encodeQueryParams(s []string) string {
@@ -95,9 +103,9 @@ func getsymb(client *http.Client, s []string) (map[string]IEXQuote, error) {
 
 func render(iex map[string]IEXQuote) {
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Sym", "Latest", "Open", "Close", "Chg", "%Chg", "VolM", "Time"})
+	table.SetHeader([]string{"!", "Sym", "Latest", "Open", "Close", "Chg", "%Chg", "VolM", "Time"})
 	r := tablewriter.ALIGN_RIGHT
-	table.SetColumnAlignment([]int{r, r, r, r, r, r, r, r})
+	table.SetColumnAlignment([]int{r, r, r, r, r, r, r, r, r})
 	var keys []string
 	for k := range iex {
 		keys = append(keys, k)
@@ -107,14 +115,20 @@ func render(iex map[string]IEXQuote) {
 		v := iex[k]
 		ts := time.Unix(0, v.Q.AsOf*1000000)
 		tz, _ := ts.Zone()
-		tsString := ts.Format("2006-01-02 15:04:05 ") + tz
+		tsString := ts.Format("01-02 15:04:05 ") + tz
+		alertbigmove := math.Abs(v.Q.ChangePct) > bigmove
+		rowalert := " "
+		if alertbigmove {
+			rowalert = "!"
+		}
 		row := []string{
+			rowalert,
 			v.Q.Symbol,
 			floatToString(v.Q.Latest),
 			floatToString(v.Q.Open),
 			floatToString(v.Q.Close),
-			colorizeFloatToString(v.Q.Change),
-			colorizeFloatToString(v.Q.ChangePct),
+			colorizeFloatToString(v.Q.Change, alertbigmove),
+			colorizeFloatToString(v.Q.ChangePct, alertbigmove),
 			floatToString(float64(v.Q.Volume) / 1000000),
 			tsString,
 		}
