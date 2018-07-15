@@ -93,18 +93,10 @@ func getsymb(client *http.Client, s []string) (map[string]IEXQuote, error) {
 	return iex, nil
 }
 
-func main() {
-	client := http.Client{Timeout: time.Second * 4}
-	symbs := os.Args[1:]
-	iex, err := getsymb(&client, symbs)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func render(iex map[string]IEXQuote) {
 	table := tablewriter.NewWriter(os.Stdout)
-	r := tablewriter.ALIGN_RIGHT
 	table.SetHeader([]string{"Sym", "Latest", "Open", "Close", "Chg", "%Chg", "VolM", "Time"})
-
+	r := tablewriter.ALIGN_RIGHT
 	table.SetColumnAlignment([]int{r, r, r, r, r, r, r, r})
 	var keys []string
 	for k := range iex {
@@ -129,4 +121,14 @@ func main() {
 		table.Append(row)
 	}
 	table.Render()
+}
+
+func main() {
+	client := http.Client{Timeout: time.Second * 4}
+	symbs := os.Args[1:]
+	iex, err := getsymb(&client, symbs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	render(iex)
 }
