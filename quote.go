@@ -19,12 +19,14 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+// percent change that will cause bolding of price fields and
+// an exclamation mark at the beginning of each row
+const bigmove = 5.00
+
 // IEXQuote holds data from iextrading.com.
 type IEXQuote struct {
 	Q Quote `json:"quote"`
 }
-
-const bigmove = 0.02
 
 // Quote holds actual quote data. This is necessary for unmarshaling.
 type Quote struct {
@@ -38,15 +40,15 @@ type Quote struct {
 	Volume    int     `json:"latestVolume"`
 }
 
-func floatToString(f float64) string {
+func ftoa(f float64) string {
 	// to convert a float number to a string
 	return strconv.FormatFloat(f, 'f', 2, 64)
 }
 
-func colorizeFloatToString(f float64, bold bool) string {
+func colorizeftoa(f float64, bold bool) string {
 	// to convert a float number to a string
 	var c *color.Color
-	s := floatToString(f)
+	s := ftoa(f)
 	switch {
 	case f < 0:
 		c = color.New(color.FgRed)
@@ -124,12 +126,12 @@ func render(iex map[string]IEXQuote) {
 		row := []string{
 			rowalert,
 			v.Q.Symbol,
-			floatToString(v.Q.Latest),
-			floatToString(v.Q.Open),
-			floatToString(v.Q.Close),
-			colorizeFloatToString(v.Q.Change, alertbigmove),
-			colorizeFloatToString(v.Q.ChangePct, alertbigmove),
-			floatToString(float64(v.Q.Volume) / 1000000),
+			ftoa(v.Q.Latest),
+			ftoa(v.Q.Open),
+			ftoa(v.Q.Close),
+			colorizeftoa(v.Q.Change, alertbigmove),
+			colorizeftoa(v.Q.ChangePct, alertbigmove),
+			ftoa(float64(v.Q.Volume) / 1000000),
 			tsString,
 		}
 		table.Append(row)
