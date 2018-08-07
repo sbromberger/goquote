@@ -29,6 +29,10 @@ func colorizeftoa(f float64, bold bool) string {
 		c = color.New(color.FgRed)
 	case f > 0:
 		c = color.New(color.FgGreen)
+	default:
+		c = color.New(color.FgWhite)
+		c.DisableColor()
+		defer c.EnableColor()
 	}
 
 	if bold {
